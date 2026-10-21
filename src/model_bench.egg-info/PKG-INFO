@@ -1,0 +1,8 @@
+Metadata-Version: 2.4
+Name: model-bench
+Version: 0.1.0
+Summary: Local-first CLI analytics and cost simulator for Agentic AI models
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.31.0
+Requires-Dist: rich>=13.7.0

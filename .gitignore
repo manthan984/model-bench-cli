@@ -1,0 +1,9 @@
+data
+docs
+env
+.env
+.venv
+venv
+
+tests
+.

@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "model-bench"
+version = "0.1.0"
+description = "Local-first CLI analytics and cost simulator for Agentic AI models"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+    "rich>=13.7.0",
+]
+
+[project.scripts]
+model-bench = "model_bench.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

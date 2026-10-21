@@ -1,0 +1,2 @@
+[console_scripts]
+model-bench = model_bench.cli:main
