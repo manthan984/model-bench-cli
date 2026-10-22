@@ -6,3 +6,194 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: requests>=2.31.0
 Requires-Dist: rich>=13.7.0
+
+# `model-bench`
+
+**Local-first CLI analytics engine for Agentic AI models.**
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+---
+
+## What is model-bench?
+
+Builders of Agentic AI systems face rapid model churn, complex pricing tiers, and varying capability support across **460+ models** and **50+ providers**. `model-bench` solves this by giving you a single CLI tool that:
+
+- **Syncs** live model data from the [OpenRouter API](https://openrouter.ai/api/v1/models) into a local SQLite database
+- **Tracks** historical price changes across sync runs
+- **Filters** models by provider, modality, context window, pricing, tool support, and more
+- **Simulates** real workload costs with prompt-caching support
+- **Ranks** models by capability-per-dollar efficiency (Pareto value ranking)
+- **Exports** results to Markdown or CSV for reports and documentation
+
+Everything runs **offline** after the initial sync — no API keys, no accounts, no cloud dependencies.
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10 or higher
+- Linux / macOS / WSL terminal
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/manthan984/model-bench-cli.git
+cd model-bench-cli
+
+# Create a virtual environment and install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+### First Run
+
+```bash
+# 1. Fetch the latest model catalog from OpenRouter
+model-bench sync
+
+# 2. View market overview
+model-bench stats
+
+# 3. Browse models
+model-bench list --limit 10
+
+# 4. Simulate costs for an agentic workflow
+model-bench simulate --input-tokens 10000 --output-tokens 1500 --calls-per-day 500
+
+# 5. Find the best value models
+model-bench rank --metric agentic --limit 10
+```
+
+---
+
+## Commands at a Glance
+
+| Command | Description |
+|---|---|
+| `model-bench sync` | Fetch & sync the OpenRouter model catalog to local SQLite |
+| `model-bench stats` | Display market KPI dashboard with distributions |
+| `model-bench list` | List models with powerful multi-criteria filters |
+| `model-bench simulate` | Simulate daily/monthly costs for a workload profile |
+| `model-bench rank` | Rank models by capability-to-cost efficiency |
+
+All read commands (`stats`, `list`, `simulate`, `rank`) work **fully offline** after an initial `sync`.
+
+> 📖 For detailed usage of every command and flag, see the **[User Guide](docs/USER_GUIDE.md)**.
+
+---
+
+## Example Outputs
+
+### `model-bench stats`
+
+```
+╭───────────────────────────── 📊 Market Overview ─────────────────────────────╮
+│   Total Models              468                                              │
+│   Free Models                20                                              │
+│   Paid Models               441                                              │
+│   Total Providers            59                                              │
+│   Benchmarked Models        287                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+╭─────────────────────── 📐 Context Window Distribution ───────────────────────╮
+│  ≤ 32K          29   ██████                                                  │
+│  32K – 128K     85   ███████████████████                                     │
+│  128K – 256K   120   ███████████████████████████                             │
+│  256K – 1M     102   ███████████████████████                                 │
+│  > 1M          132   ██████████████████████████████                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+### `model-bench simulate`
+
+```
+Workload: 10,000 input + 1,500 output tokens × 500 calls/day  |  Cache hit rate: 60%
+
+                              Cost Simulation
+┏━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━┓
+┃  # ┃ Model ID          ┃ Provider ┃ Daily $ ┃ Monthly $ ┃       IQ ┃
+┡━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━┩
+│  1 │ z-ai/glm-5.3-fl…  │ z-ai     │   $0.18 │     $5.51 │     41.8 │
+│  2 │ anthropic/claude…  │ anthropic│   $0.60 │    $18.15 │     43.4 │
+│  3 │ meta/llama-4-be…  │ meta     │   $6.14 │   $184.30 │     48.1 │
+└────┴───────────────────┴──────────┴─────────┴───────────┴──────────┘
+```
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Presentation Layer                     │
+│         cli.py · display.py · exporter.py           │
+│   argparse routing · Rich tables · MD/CSV export    │
+├─────────────────────────────────────────────────────┤
+│         Ingestion & Normalization Layer              │
+│                   client.py                          │
+│   HTTP fetch · edge-case sanitization · pricing      │
+├─────────────────────────────────────────────────────┤
+│            Data Persistence Layer                    │
+│                    db.py                             │
+│   SQLite3 · schema · upserts · analytical queries    │
+└─────────────────────────────────────────────────────┘
+```
+
+### Key Design Decisions
+
+- **Local-first:** All data stored in `~/.local/share/model-bench/models.db`. Override with `MODEL_BENCH_DB_PATH` env var.
+- **No API keys required:** Uses the public, unauthenticated OpenRouter catalog endpoint.
+- **Price history auditing:** Every `sync` detects and logs price changes into a `price_history` table.
+- **Parameterized SQL:** All queries use safe `?` / `:name` placeholders (no SQL injection risk).
+- **Edge-case handling:** Gracefully handles `~` alias prefixes, `:batch`/`:free` SKU variants, negative router pricing, empty HuggingFace IDs, sparse benchmarks, and mismatched context lengths.
+
+---
+
+## Project Structure
+
+```
+model-bench-cli/
+├── docs/
+│   ├── REQUIREMENTS.md          # Software Requirements Specification
+│   ├── ARCHITECTURE.md          # System Architecture & DB Schema
+│   └── USER_GUIDE.md            # Complete CLI usage guide
+├── src/
+│   └── model_bench/
+│       ├── __init__.py          # Package version
+│       ├── cli.py               # Entry point & subcommand routing
+│       ├── client.py            # HTTP client & JSON normalizer
+│       ├── db.py                # SQLite schema & analytical queries
+│       ├── display.py           # Rich terminal rendering
+│       └── exporter.py          # Markdown & CSV file export
+├── tests/
+│   ├── payload.json             # Offline sample payload fixture
+│   └── test_normalizer.py       # 39 unit & integration tests
+├── pyproject.toml               # Build config & entry point
+└── README.md
+```
+
+---
+
+## Running Tests
+
+```bash
+pip install pytest
+python -m pytest tests/ -v
+```
+
+---
+
+## Data Source
+
+All model data is sourced from the **[OpenRouter API](https://openrouter.ai/api/v1/models)** (`GET /api/v1/models`), which provides an unauthenticated, public catalog of 460+ models across 50+ providers including OpenAI, Anthropic, Google, Meta, DeepSeek, Mistral, and many more.
+
+---
+
+## License
+
+MIT

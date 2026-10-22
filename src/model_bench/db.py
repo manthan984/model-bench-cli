@@ -423,8 +423,7 @@ def query_simulate(
                 2
             ) AS monthly_cost_usd
         FROM models
-        WHERE prompt_price_per_m >= 0
-          AND completion_price_per_m >= 0
+        WHERE (prompt_price_per_m > 0 OR completion_price_per_m > 0)
           AND is_alias = 0
           AND (:include_batch = 1 OR is_batch = 0)
           AND (:include_free = 1 OR is_free = 0)

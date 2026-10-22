@@ -107,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--sort",
         type=str,
         choices=["newest", "price", "context", "iq", "code", "agentic"],
-        default="newest",
+        default="iq",
         help="Sort order (default: newest)",
     )
     list_parser.add_argument(

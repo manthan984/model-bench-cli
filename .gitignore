@@ -1,9 +1,9 @@
 data
 docs
 env
+reports
 .env
 .venv
 venv
-
-tests
+tests 
 .
