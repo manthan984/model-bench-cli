@@ -104,6 +104,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--limit", type=int, default=25, help="Max results (default: 25)"
     )
     list_parser.add_argument(
+        "--sort",
+        type=str,
+        choices=["newest", "price", "context", "iq", "code", "agentic"],
+        default="newest",
+        help="Sort order (default: newest)",
+    )
+    list_parser.add_argument(
         "--export", type=str, metavar="FILEPATH", help="Export to .md or .csv file"
     )
 
@@ -140,6 +147,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-batch",
         action="store_true",
         help="Include :batch variant SKUs",
+    )
+    sim_parser.add_argument(
+        "--include-free",
+        action="store_true",
+        help="Include $0.00 free-tier models in results",
     )
     sim_parser.add_argument(
         "--limit", type=int, default=20, help="Max results (default: 20)"
@@ -222,6 +234,7 @@ def _handle_list(args: argparse.Namespace) -> None:
             free_only=args.free_only,
             include_batch=args.include_batch,
             include_aliases=args.include_aliases,
+            sort_by=args.sort,
             limit=args.limit,
         )
 
@@ -254,6 +267,7 @@ def _handle_simulate(args: argparse.Namespace) -> None:
             require_tools=args.tools,
             min_intelligence=args.min_intelligence,
             include_batch=args.include_batch,
+            include_free=args.include_free,
             limit=args.limit,
         )
 

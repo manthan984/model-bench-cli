@@ -273,6 +273,17 @@ def query_stats(conn: sqlite3.Connection) -> dict[str, Any]:
     }
 
 
+# Valid sort columns for the list query (whitelist to prevent SQL injection)
+_LIST_SORT_COLUMNS = {
+    "newest": "created_at DESC NULLS LAST",
+    "price": "prompt_price_per_m ASC",
+    "context": "provider_context_length DESC",
+    "iq": "intelligence_index DESC NULLS LAST",
+    "code": "coding_index DESC NULLS LAST",
+    "agentic": "agentic_index DESC NULLS LAST",
+}
+
+
 def query_list(
     conn: sqlite3.Connection,
     *,
@@ -286,6 +297,7 @@ def query_list(
     free_only: bool = False,
     include_batch: bool = False,
     include_aliases: bool = False,
+    sort_by: str = "newest",
     limit: int = 25,
 ) -> list[dict[str, Any]]:
     """Execute a filtered model listing query (FR-04)."""
@@ -325,6 +337,9 @@ def query_list(
     where = " AND ".join(conditions)
     params["limit"] = limit
 
+    # sort_by is from a static whitelist, safe to interpolate
+    order_clause = _LIST_SORT_COLUMNS.get(sort_by, _LIST_SORT_COLUMNS["newest"])
+
     rows = conn.execute(
         f"""
         SELECT
@@ -336,7 +351,7 @@ def query_list(
             hugging_face_id, is_free, is_batch
         FROM models
         WHERE {where}
-        ORDER BY prompt_price_per_m ASC, name ASC
+        ORDER BY {order_clause}, name ASC
         LIMIT :limit;
         """,
         params,
@@ -355,9 +370,14 @@ def query_simulate(
     require_tools: bool = False,
     min_intelligence: float | None = None,
     include_batch: bool = False,
+    include_free: bool = False,
     limit: int = 20,
 ) -> list[dict[str, Any]]:
-    """Execute the cost simulation query (FR-05)."""
+    """Execute the cost simulation query (FR-05).
+
+    Free models are excluded by default because simulating dollar spend
+    on rate-limited $0.00 endpoints is rarely useful.
+    """
     params: dict[str, Any] = {
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
@@ -366,6 +386,7 @@ def query_simulate(
         "require_tools": 1 if require_tools else 0,
         "min_intelligence": min_intelligence,
         "include_batch": 1 if include_batch else 0,
+        "include_free": 1 if include_free else 0,
         "limit": limit,
     }
 
@@ -406,6 +427,7 @@ def query_simulate(
           AND completion_price_per_m >= 0
           AND is_alias = 0
           AND (:include_batch = 1 OR is_batch = 0)
+          AND (:include_free = 1 OR is_free = 0)
           AND provider_context_length >= (:input_tokens + :output_tokens)
           AND (max_completion_tokens IS NULL OR max_completion_tokens >= :output_tokens)
           AND (:require_tools = 0 OR supports_tools = 1)
