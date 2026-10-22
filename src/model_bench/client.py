@@ -116,9 +116,11 @@ def normalize_record(raw: dict[str, Any]) -> dict[str, Any] | None:
     mandatory_reasoning = 1 if reasoning.get("mandatory") is True else 0
 
     # --- Derived flags ---
+    # Only explicit :free SKUs and the openrouter/free router are marked free.
+    # Zero-priced audio/preview models (e.g. Lyria) are billed per-request,
+    # not per-token, so they should NOT be treated as free LLM endpoints.
     is_free = 1 if (
-        (prompt_price_per_m == 0 and completion_price_per_m == 0)
-        or model_id.endswith(":free")
+        model_id.endswith(":free") or model_id == "openrouter/free"
     ) else 0
     is_batch = 1 if model_id.endswith(":batch") else 0
     is_alias = 1 if (model_id.startswith("~") or "alias_target" in raw) else 0

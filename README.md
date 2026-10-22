@@ -33,7 +33,7 @@ Everything runs **offline** after the initial sync — no API keys, no accounts,
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/model-bench-cli.git
+git clone https://github.com/manthan984/model-bench-cli.git
 cd model-bench-cli
 
 # Create a virtual environment and install
